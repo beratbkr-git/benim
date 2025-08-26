@@ -41,6 +41,8 @@ if ($is_edit) {
         exit();
     }
 }
+
+$gateway = json_decode($odeme_yontemi['gateway_ayarlari'], true) ?: [];
 ?>
 <main>
     <div class="container">
@@ -103,6 +105,27 @@ if ($is_edit) {
                             </div>
                         </div>
                     </div>
+
+                    <!-- PAYTR AYARLARI -->
+                    <div class="mb-5" id="paytr-settings">
+                        <h2 class="small-title">PayTR Ayarları</h2>
+                        <div class="card">
+                            <div class="card-body">
+                                <div class="mb-3">
+                                    <label class="form-label" for="merchant_id">Merchant ID</label>
+                                    <input type="text" class="form-control" id="merchant_id" name="gateway[merchant_id]" value="<?= htmlspecialchars($gateway['merchant_id'] ?? '') ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" for="merchant_key">Merchant Key</label>
+                                    <input type="text" class="form-control" id="merchant_key" name="gateway[merchant_key]" value="<?= htmlspecialchars($gateway['merchant_key'] ?? '') ?>">
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label" for="merchant_salt">Merchant Salt</label>
+                                    <input type="text" class="form-control" id="merchant_salt" name="gateway[merchant_salt]" value="<?= htmlspecialchars($gateway['merchant_salt'] ?? '') ?>">
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
                 <div class="col-xl-4">
                     <!-- DURUM KARTI -->
@@ -127,6 +150,21 @@ if ($is_edit) {
             </div>
         </form>
     </div>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const codeInput = document.getElementById('yontem_kodu');
+            const paytrCard = document.getElementById('paytr-settings');
+            const togglePaytr = () => {
+                if (codeInput.value.trim().toLowerCase() === 'paytr') {
+                    paytrCard.style.display = 'block';
+                } else {
+                    paytrCard.style.display = 'none';
+                }
+            };
+            codeInput.addEventListener('input', togglePaytr);
+            togglePaytr();
+        });
+    </script>
 </main>
 
 <!-- Silme Onay Modalı -->

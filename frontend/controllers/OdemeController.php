@@ -16,15 +16,21 @@ class OdemeController extends BaseController
         $kargo_ucreti = $sepet_toplam >= 500 ? 0 : 29.90;
         $genel_toplam = $sepet_toplam + $kargo_ucreti;
 
-        $odeme_yontemleri = $this->db->fetchAll("
-            SELECT * FROM bt_odeme_yontemleri 
-            WHERE durum = 'Aktif' 
-        ");
+        $odeme_yontemleri = $this->db->fetchAll(
+            "SELECT * FROM bt_odeme_yontemleri WHERE durum = 'Aktif'"
+        );
 
-        $kargo_yontemleri = $this->db->fetchAll("
-            SELECT * FROM bt_kargo_yontemleri 
-            WHERE durum = 'Aktif' 
-        ");
+        $kargo_yontemleri = $this->db->fetchAll(
+            "SELECT * FROM bt_kargo_yontemleri WHERE durum = 'Aktif'"
+        );
+
+        $adresler = [];
+        if ($this->isLoggedIn()) {
+            $adresler = $this->db->fetchAll(
+                "SELECT * FROM bt_musteri_adresleri WHERE musteri_id = :id",
+                ['id' => $_SESSION['musteri_id']]
+            );
+        }
 
         if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $this->siparisOlustur();
@@ -39,6 +45,7 @@ class OdemeController extends BaseController
             'genel_toplam' => $genel_toplam,
             'odeme_yontemleri' => $odeme_yontemleri,
             'kargo_yontemleri' => $kargo_yontemleri,
+            'adresler' => $adresler,
             'sepet_adet' => $this->getSepetAdet()
         ]);
     }
@@ -50,6 +57,7 @@ class OdemeController extends BaseController
         $kargo_ucreti = $sepet_toplam >= 500 ? 0 : 29.90;
         $genel_toplam = $sepet_toplam + $kargo_ucreti;
 
+        $adres_id = $_POST['adres_id'] ?? 'yeni';
         $ad_soyad = $_POST['ad_soyad'] ?? '';
         $eposta = $_POST['eposta'] ?? '';
         $telefon = $_POST['telefon'] ?? '';
@@ -57,17 +65,23 @@ class OdemeController extends BaseController
         $il = $_POST['il'] ?? '';
         $ilce = $_POST['ilce'] ?? '';
         $posta_kodu = $_POST['posta_kodu'] ?? '';
+        $fatura_farkli = isset($_POST['fatura_farkli']);
+        $fatura_adres_id = $_POST['fatura_adres_id'] ?? ($fatura_farkli ? 'yeni' : $adres_id);
         $odeme_yontemi_id = $_POST['odeme_yontemi'] ?? 0;
-        $kargo_yontemi_id = $_POST['kargo_yontemi'] ?? 0;
         $musteri_notu = $_POST['musteri_notu'] ?? '';
 
         $hatalar = [];
         if (empty($ad_soyad)) $hatalar[] = 'Ad Soyad zorunludur.';
         if (empty($eposta)) $hatalar[] = 'E-posta zorunludur.';
         if (empty($telefon)) $hatalar[] = 'Telefon zorunludur.';
-        if (empty($adres)) $hatalar[] = 'Adres zorunludur.';
-        if (empty($il)) $hatalar[] = 'İl zorunludur.';
-        if (empty($ilce)) $hatalar[] = 'İlçe zorunludur.';
+        if ($adres_id === 'yeni') {
+            if (empty($adres)) $hatalar[] = 'Adres zorunludur.';
+            if (empty($il)) $hatalar[] = 'İl zorunludur.';
+            if (empty($ilce)) $hatalar[] = 'İlçe zorunludur.';
+        }
+        if ($fatura_farkli && $fatura_adres_id === 'yeni') {
+            if (empty($_POST['fatura_adres'])) $hatalar[] = 'Fatura adresi zorunludur.';
+        }
 
         if (!empty($hatalar)) {
             $_SESSION['hata'] = implode('<br>', $hatalar);
@@ -89,11 +103,42 @@ class OdemeController extends BaseController
                         'ad_soyad' => $ad_soyad,
                         'eposta' => $eposta,
                         'telefon' => $telefon,
-                        'durum' => 'Aktif',
-                        'kayit_tarihi' => date('Y-m-d H:i:s')
+                        'durum' => 'Aktif'
                     ];
                     $musteri_id = $this->db->insert('bt_musteriler', $musteri_data);
                 }
+            }
+
+            if ($adres_id === 'yeni') {
+                $adres_id = $this->db->insert('bt_musteri_adresleri', [
+                    'musteri_id' => $musteri_id,
+                    'adres_baslik' => 'Sipariş Adresi',
+                    'ad_soyad' => $ad_soyad,
+                    'adres' => $adres,
+                    'il' => $il,
+                    'ilce' => $ilce,
+                    'posta_kodu' => $posta_kodu,
+                    'telefon' => $telefon,
+                    'varsayilan_adres' => 0
+                ]);
+            }
+
+            if ($fatura_farkli) {
+                if ($fatura_adres_id === 'yeni') {
+                    $fatura_adres_id = $this->db->insert('bt_musteri_adresleri', [
+                        'musteri_id' => $musteri_id,
+                        'adres_baslik' => 'Fatura Adresi',
+                        'ad_soyad' => $ad_soyad,
+                        'adres' => $_POST['fatura_adres'],
+                        'il' => $_POST['fatura_il'] ?? '',
+                        'ilce' => $_POST['fatura_ilce'] ?? '',
+                        'posta_kodu' => $_POST['fatura_posta_kodu'] ?? '',
+                        'telefon' => $telefon,
+                        'varsayilan_adres' => 0
+                    ]);
+                }
+            } else {
+                $fatura_adres_id = $adres_id;
             }
 
             $siparis_kodu = 'SP' . date('Ymd') . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT);
@@ -106,17 +151,9 @@ class OdemeController extends BaseController
                 'odenen_tutar' => $genel_toplam,
                 'siparis_durumu' => 'Yeni',
                 'odeme_yontemi_id' => $odeme_yontemi_id,
-                'kargo_yontemi_id' => $kargo_yontemi_id,
                 'musteri_notu' => $musteri_notu,
-                'fatura_bilgileri' => json_encode([
-                    'ad_soyad' => $ad_soyad,
-                    'eposta' => $eposta,
-                    'telefon' => $telefon,
-                    'adres' => $adres,
-                    'il' => $il,
-                    'ilce' => $ilce,
-                    'posta_kodu' => $posta_kodu
-                ]),
+                'teslimat_adresi_id' => $adres_id,
+                'fatura_adresi_id' => $fatura_adres_id,
                 'olusturma_tarihi' => date('Y-m-d H:i:s')
             ];
 
