@@ -1,0 +1,62 @@
+RewriteEngine On
+
+# /anasayfa -> /
+Redirect 301 /anasayfa /
+
+# CORS
+<IfModule mod_headers.c>
+  Header set Access-Control-Allow-Origin "http://demo3.hepsibirsepetim.com/"
+</IfModule>
+
+# 9 parametre
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)$ index.php?p1=$1&p2=$2&p3=$3&p4=$4&p5=$5&p6=$6&p7=$7&p8=$8&p9=$9 [L,QSA]
+
+# 8 parametre
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)$ index.php?p1=$1&p2=$2&p3=$3&p4=$4&p5=$5&p6=$6&p7=$7&p8=$8 [L,QSA]
+
+# 7 parametre
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)$ index.php?p1=$1&p2=$2&p3=$3&p4=$4&p5=$5&p6=$6&p7=$7 [L,QSA]
+
+# 6 parametre
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)$ index.php?p1=$1&p2=$2&p3=$3&p4=$4&p5=$5&p6=$6 [L,QSA]
+
+# 5 parametre
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([^/]+)/([^/]+)/([^/]+)/([^/]+)/([^/]+)$ index.php?p1=$1&p2=$2&p3=$3&p4=$4&p5=$5 [L,QSA]
+
+# 4 parametre
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([^/]+)/([^/]+)/([^/]+)/([^/]+)$ index.php?p1=$1&p2=$2&p3=$3&p4=$4 [L,QSA]
+
+# 3 parametre
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([^/]+)/([^/]+)/([^/]+)$ index.php?p1=$1&p2=$2&p3=$3 [L,QSA]
+
+# 2 parametre
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([^/]+)/([^/]+)$ index.php?p1=$1&p2=$2 [L,QSA]
+
+# 1 parametre
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteRule ^([^/]+)$ index.php?p1=$1 [L,QSA]
+
+# 404 sayfası
+ErrorDocument 404 /404
+
+# cPanel PHP handler
+<IfModule mime_module>
+  AddHandler application/x-httpd-ea-php72 .php .php7 .phtml
+</IfModule>
