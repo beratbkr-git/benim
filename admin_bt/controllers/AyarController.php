@@ -380,6 +380,13 @@ class AyarController
             'durum' => $_POST['durum'] ?? 'Pasif',
         ];
 
+        $gateway = $_POST['gateway'] ?? [];
+        $data['gateway_ayarlari'] = json_encode([
+            'merchant_id' => trim($gateway['merchant_id'] ?? ''),
+            'merchant_key' => trim($gateway['merchant_key'] ?? ''),
+            'merchant_salt' => trim($gateway['merchant_salt'] ?? ''),
+        ]);
+
         if (empty($data['yontem_adi']) || empty($data['yontem_kodu'])) {
             $_SESSION["hata"] = "Yöntem adı ve Yöntem kodu boş bırakılamaz.";
             return false;
