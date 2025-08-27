@@ -533,12 +533,40 @@ function getSepet()
 
     return $sepet;
 }
+/**
+ * Fiyatı KDV dahil ve para birimi sembolüyle formatlar.
+ * @param float $price
+ * @return string
+ */
 function formatPrice($price)
 {
-    global $site_ayarlari;
-    $kdv_orani = $site_ayarlari['kdv_orani'] ?? 0;
-    $para_birimi = $site_ayarlari['varsayilan_para_birimi'] ?? '₺';
+    global $db;
+    $kdv_orani = (float)($db->fetch("SELECT ayar_degeri FROM bt_sistem_ayarlari_gelismis WHERE ayar_anahtari = 'kdv_orani'")['ayar_degeri'] ?? 0);
+    $varsayilan_para_birimi_data = $db->fetch("SELECT ayar_degeri FROM bt_sistem_ayarlari_gelismis WHERE ayar_anahtari = 'varsayilan_para_birimi'");
+    $para_birimi = $varsayilan_para_birimi_data['ayar_degeri'] ?? '₺';
 
     $kdv_dahil_fiyat = $price * (1 + $kdv_orani / 100);
+
     return number_format($kdv_dahil_fiyat, 2, ',', '.') . ' ' . $para_birimi;
+}
+/**
+ * Giriş yapmış kullanıcının istek listesindeki ürün ID'lerini döndürür.
+ * @return array İstek listesindeki ürün ID'lerini içeren dizi.
+ */
+function getIstekListesiUrunIdleri()
+{
+    global $db;
+
+    $musteri_id = $_SESSION['musteri_id'] ?? null;
+
+    if (!$musteri_id) {
+        return [];
+    }
+
+    $istek_listesi_urunler = $db->fetchAll(
+        "SELECT urun_id FROM bt_istek_listesi WHERE musteri_id = :musteri_id",
+        ['musteri_id' => $musteri_id]
+    );
+
+    return array_column($istek_listesi_urunler, 'urun_id');
 }
